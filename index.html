@@ -43,6 +43,7 @@ a{color:var(--accent)}
   <div class="card">
     <div id="time">--:--:--</div>
     <div id="date"></div>
+    <div id="hello" style="margin-top:8px;font-weight:600"></div>
   </div>
 
   <div class="card">
@@ -65,6 +66,7 @@ a{color:var(--accent)}
     </div>
     <p style="font-size:12px;color:var(--muted);margin:8px 0 0">If the player doesn't load, <a id="open" href="#" target="_blank" rel="noopener">open it in Spotify</a>.</p>
   </div>
+
   <div class="card">
     <h2>My Socials</h2>
     <div class="soc" id="soc"></div>
@@ -85,7 +87,12 @@ function load(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d}ca
 function save(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
 
 var items=load("dash_sched",DEFAULT);
+var Q=new URLSearchParams(location.search);
+function q(k){return (Q.get(k)||"").trim().slice(0,200)}
 var playlist=load("dash_pl",DEFAULT_PL);
+var qp=q("pl");
+if(/^[A-Za-z0-9]{22}$/.test(qp)){playlist="https://open.spotify.com/playlist/"+qp}
+else if(/open\.spotify\.com\//.test(qp)){playlist=qp}
 
 function nowParts(){
   var f=new Intl.DateTimeFormat("en-US",{timeZone:TZ,hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false});
@@ -144,21 +151,32 @@ document.getElementById("setpl").onclick=function(){
 };
 
 var SOCIALS=[
-  {cls:"fb",icon:"f",name:"Facebook",url:"https://www.facebook.com/yourusername"},
-  {cls:"tt",icon:"♪",name:"TikTok",url:"https://www.tiktok.com/@yourusername"},
-  {cls:"ig",icon:"◎",name:"Instagram",url:"https://www.instagram.com/yourusername"}
+  {cls:"fb",icon:"f",name:"Facebook",key:"fb",base:"https://www.facebook.com/",url:"https://www.facebook.com/yourusername"},
+  {cls:"tt",icon:"♪",name:"TikTok",key:"tt",base:"https://www.tiktok.com/@",url:"https://www.tiktok.com/@yourusername"},
+  {cls:"ig",icon:"◎",name:"Instagram",key:"ig",base:"https://www.instagram.com/",url:"https://www.instagram.com/yourusername"}
 ];
+function socialUrl(x){
+  var v=q(x.key);
+  if(v){
+    if(/^https?:\/\//i.test(v))return v;
+    return x.base+encodeURIComponent(v.replace(/^@/,""));
+  }
+  return (x.url&&x.url.indexOf("yourusername")<0)?x.url:"";
+}
 function showSocials(){
   var box=document.getElementById("soc");
   SOCIALS.forEach(function(x){
-    if(!x.url)return;
+    var u=socialUrl(x);
+    if(!u)return;
     var a=document.createElement("a");
-    a.className=x.cls;a.href=x.url;a.target="_blank";a.rel="noopener";
+    a.className=x.cls;a.href=u;a.target="_blank";a.rel="noopener";
     a.innerHTML="<b>"+x.icon+"</b><span>"+x.name+"</span>";
     box.appendChild(a);
   });
   if(!box.children.length)box.parentNode.style.display="none";
 }
+var nm=q("name");
+if(nm){document.getElementById("hello").textContent="Hi, "+nm+" 👋";document.title=nm+"'s Dashboard"}
 showSocials();
 showPlayer();tick();setInterval(tick,1000);
 </script>
