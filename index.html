@@ -27,6 +27,7 @@ button,input{font:inherit}
 button{border:0;background:var(--accent);color:#fff;border-radius:10px;padding:8px 12px;cursor:pointer}
 button.x{background:none;color:var(--muted);padding:4px 8px}
 form,.row{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+#socform input{width:100%}
 input{padding:8px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--text);min-width:0}
 input.title{flex:1 1 140px}
 iframe{width:100%;border:0;border-radius:12px;height:352px}
@@ -66,10 +67,19 @@ a{color:var(--accent)}
     </div>
     <p style="font-size:12px;color:var(--muted);margin:8px 0 0">If the player doesn't load, <a id="open" href="#" target="_blank" rel="noopener">open it in Spotify</a>.</p>
   </div>
-
   <div class="card">
-    <h2>My Socials</h2>
-    <div class="soc" id="soc"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h2 style="margin:0">My Socials</h2>
+      <button type="button" id="edsoc">✎ Edit</button>
+    </div>
+    <div class="soc" id="soc" style="margin-top:12px"></div>
+    <form id="socform" style="display:none;flex-direction:column">
+      <input id="f_name" placeholder="Your name">
+      <input id="f_fb" placeholder="Facebook username or link">
+      <input id="f_tt" placeholder="TikTok username or link">
+      <input id="f_ig" placeholder="Instagram username or link">
+      <button type="submit">Save</button>
+    </form>
   </div>
 </div>
 
@@ -151,20 +161,21 @@ document.getElementById("setpl").onclick=function(){
 };
 
 var SOCIALS=[
-  {cls:"fb",icon:"f",name:"Facebook",key:"fb",base:"https://www.facebook.com/",url:"https://www.facebook.com/yourusername"},
-  {cls:"tt",icon:"♪",name:"TikTok",key:"tt",base:"https://www.tiktok.com/@",url:"https://www.tiktok.com/@yourusername"},
-  {cls:"ig",icon:"◎",name:"Instagram",key:"ig",base:"https://www.instagram.com/",url:"https://www.instagram.com/yourusername"}
+  {cls:"fb",icon:"f",name:"Facebook",key:"fb",base:"https://www.facebook.com/"},
+  {cls:"tt",icon:"♪",name:"TikTok",key:"tt",base:"https://www.tiktok.com/@"},
+  {cls:"ig",icon:"◎",name:"Instagram",key:"ig",base:"https://www.instagram.com/"}
 ];
+var S=load("dash_soc",{});
+function val(k){return q(k)||(S[k]||"")}
 function socialUrl(x){
-  var v=q(x.key);
-  if(v){
-    if(/^https?:\/\//i.test(v))return v;
-    return x.base+encodeURIComponent(v.replace(/^@/,""));
-  }
-  return (x.url&&x.url.indexOf("yourusername")<0)?x.url:"";
+  var v=val(x.key).trim();
+  if(!v)return "";
+  if(/^https?:\/\//i.test(v))return v;
+  return x.base+encodeURIComponent(v.replace(/^@/,""));
 }
 function showSocials(){
   var box=document.getElementById("soc");
+  box.innerHTML="";
   SOCIALS.forEach(function(x){
     var u=socialUrl(x);
     if(!u)return;
@@ -173,10 +184,28 @@ function showSocials(){
     a.innerHTML="<b>"+x.icon+"</b><span>"+x.name+"</span>";
     box.appendChild(a);
   });
-  if(!box.children.length)box.parentNode.style.display="none";
+  if(!box.children.length){box.innerHTML='<div class="empty">Tap Edit to add your Facebook, TikTok and Instagram.</div>'}
 }
-var nm=q("name");
-if(nm){document.getElementById("hello").textContent="Hi, "+nm+" 👋";document.title=nm+"'s Dashboard"}
+function showName(){
+  var nm=val("name").trim();
+  document.getElementById("hello").textContent=nm?"Hi, "+nm+" 👋":"";
+  document.title=nm?nm+"'s Dashboard":"My Dashboard";
+}
+document.getElementById("edsoc").onclick=function(){
+  var f=document.getElementById("socform");
+  if(f.style.display==="flex"){f.style.display="none";return}
+  ["name","fb","tt","ig"].forEach(function(k){document.getElementById("f_"+k).value=S[k]||""});
+  f.style.display="flex";
+};
+document.getElementById("socform").onsubmit=function(ev){
+  ev.preventDefault();
+  S={};
+  ["name","fb","tt","ig"].forEach(function(k){S[k]=document.getElementById("f_"+k).value.trim().slice(0,200)});
+  save("dash_soc",S);
+  this.style.display="none";
+  showSocials();showName();
+};
+showName();
 showSocials();
 showPlayer();tick();setInterval(tick,1000);
 </script>
