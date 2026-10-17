@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -80,6 +82,14 @@ a{color:var(--accent)}
       <input id="f_ig" placeholder="Instagram username or link">
       <button type="submit">Save</button>
     </form>
+    <div id="share" style="display:none;margin-top:14px">
+      <p style="font-size:13px;color:var(--muted);margin:0">Write this link to your NFC card so anyone who scans it sees your socials:</p>
+      <div class="row">
+        <input class="title" id="sharelink" readonly>
+        <button type="button" id="cplink">Copy</button>
+      </div>
+      <p id="sharelen" style="font-size:12px;color:var(--muted);margin:6px 0 0"></p>
+    </div>
   </div>
 </div>
 
@@ -157,7 +167,7 @@ function showPlayer(){
 }
 document.getElementById("setpl").onclick=function(){
   var v=document.getElementById("pl").value.trim();
-  if(spotifyEmbed(v)){playlist=v;save("dash_pl",v);showPlayer()}else{alert("Please paste a valid Spotify link.")}
+  if(spotifyEmbed(v)){playlist=v;save("dash_pl",v);showPlayer();updateShare()}else{alert("Please paste a valid Spotify link.")}
 };
 
 var SOCIALS=[
@@ -203,8 +213,26 @@ document.getElementById("socform").onsubmit=function(ev){
   ["name","fb","tt","ig"].forEach(function(k){S[k]=document.getElementById("f_"+k).value.trim().slice(0,200)});
   save("dash_soc",S);
   this.style.display="none";
-  showSocials();showName();
+  showSocials();showName();updateShare();
 };
+function updateShare(){
+  var p=new URLSearchParams();
+  ["name","fb","tt","ig"].forEach(function(k){if(S[k])p.set(k,S[k])});
+  var sp=load("dash_pl","");
+  if(sp&&p.toString())p.set("pl",sp);
+  var qs=p.toString();
+  document.getElementById("share").style.display=qs?"block":"none";
+  var link=location.origin+location.pathname+(qs?"?"+qs:"");
+  document.getElementById("sharelink").value=link;
+  var n=link.length;
+  document.getElementById("sharelen").textContent=n+" characters. "+(n>450?"Too long for most cards. Remove the playlist or use shorter usernames.":"This fits an NTAG215 or NTAG216 card.");
+}
+document.getElementById("cplink").onclick=function(){
+  var i=document.getElementById("sharelink");
+  try{navigator.clipboard.writeText(i.value)}catch(e){i.select();document.execCommand("copy")}
+  this.textContent="Copied!";var b=this;setTimeout(function(){b.textContent="Copy"},1500);
+};
+updateShare();
 showName();
 showSocials();
 showPlayer();tick();setInterval(tick,1000);
